@@ -77,6 +77,7 @@
 
         let userName = urlParams.get("userName");
 
+        // Function for creating the Basket, scary, right?
         async function createBasket() {
             const response = await fetch(headLessApiBasket.replace("{token}", apiKey), {
                 method: "POST",
@@ -86,6 +87,7 @@
             return await response.json();
         }
 
+        // Adds a package to the basket with the basketIdentifier, packageId & quantity provided
         async function addPackage(basketIdent, packageId, quantity) {
             const response = await fetch(headLessPackages.replace("{basketIdent}", basketIdent), {
                 method: "POST",
