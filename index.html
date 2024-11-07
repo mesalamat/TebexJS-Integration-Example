@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tebex JS Checkout Example</title>
+    <script defer src="https://js.tebex.io/v/1.js"></script>
+    <style>
+        .prompt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .prompt-box {
+            background-color: #222;
+            color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            width: 300px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .prompt-box input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            background-color: #333;
+            color: #fff;
+        }
+
+        .prompt-box button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ffd700;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .prompt-box button:hover {
+            background-color: #ffbf00;
+        }
+    </style>
+    <script>
+
+
+        //The Official Documentation refers to this as "Token" or "Webstore Identifier" when its actually your Public API Key, misleading?
+        const apiKey = "t66x-7cd928b1e9312709e6810edac6dc1fd1eefc57cb" /*This can be found under Integrations -> Api Keys -> Public API-Key, this is the one Tebex uses as example*/;
+
+        const headLessApiBasket = "https://headless.tebex.io/api/accounts/{token}/baskets";
+        const headLessPackages = "https://headless.tebex.io/api/baskets/{basketIdent}/packages";
+
+        const debug = true;
+
+        const headers = {
+            "Content-Type": "application/json"
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+
+
+        let basket;
+        let basketIdent;
+
+        let userName = urlParams.get("userName");
+
+        async function createBasket() {
+            const response = await fetch(headLessApiBasket.replace("{token}", apiKey), {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify({"username": userName}),
+            });
+            return await response.json();
+        }
+
+        async function addPackage(basketIdent, packageId, quantity) {
+            const response = await fetch(headLessPackages.replace("{basketIdent}", basketIdent), {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify({"quantity": quantity, "package_id": packageId}),
+            });
+            return await response.json();
+        }
+
+
+        async function setupBasket() {
+            await createBasket().then((data) => {
+                basket = data;
+                basketIdent = data.data.ident;
+                if(debug) {
+                    console.log(data);
+                    console.log("Basket Identifier:", basketIdent);
+                }
+            });
+            await addPackage(basketIdent, 0/*You can grab the package id when editing a package, it's the Integer in the URL*/, 1);
+        }
+
+        function showCustomPrompt() {
+            document.getElementById("customPrompt").style.display = "flex";
+        }
+
+        // Function to handle submission of Username
+        function submitUsername() {
+            userName = document.getElementById("usernameInput").value;
+
+            if (userName) {
+                // Add username to URL and reload the page
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set("userName", userName);
+                window.location.href = newUrl.toString();
+            } else {
+                alert("Please enter a username to continue.");
+            }
+        }
+
+        function checkout() {
+            Tebex.checkout.init({
+                ident: basketIdent /* Documentation on this is rather bad, this is not ur CHECKOUT ident but the identifier of your Basket*/,
+                locale: 'en_US'
+            });
+            Tebex.checkout.launch();
+        }
+
+        addEventListener("load", () => {
+            if (!userName) {
+                showCustomPrompt()
+            }else{
+                setupBasket();
+            }
+        });
+    </script>
+</head>
+<body>
+<div id="customPrompt" class="prompt-overlay">
+    <div class="prompt-box">
+        <h2>Enter Your Username</h2>
+        <input type="text" id="usernameInput" placeholder="Username">
+        <button onclick="submitUsername()">Submit</button>
+    </div>
+</div>
+<a class onclick="checkout()">
+    Click me for Checkout
+</a>
+</body>
+</html>
